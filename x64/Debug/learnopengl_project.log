@@ -1,3 +1,0 @@
-﻿  Aurora.cpp
-D:\OpenGL\learnopengl\Project\learnopengl_project\Aurora.cpp(153,19): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-  learnopengl_project.vcxproj -> D:\OpenGL\learnopengl\Project\learnopengl_project\x64\Debug\learnopengl_project.exe
