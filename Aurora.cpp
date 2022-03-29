@@ -152,8 +152,10 @@ int main() {
 
 		float timeValue = glfwGetTime();
 		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+		float posOffset[] = { greenValue, 0.0f, 0.0f, 1.0f };
 
 		shader1.use();
+		shader1.setVecN("posOffset", posOffset, 3);
 		glBindVertexArray(VAO1);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glBindVertexArray(0);
