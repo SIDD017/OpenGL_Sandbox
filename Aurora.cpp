@@ -1,12 +1,17 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "stb_image.h"
 #include <iostream>
 
 #include "shader.h"
 
+/* Shaders */
 const char* vertexPath = "shaders/shader.vs";
 const char* fragmentPath = "shaders/shader.fs";
 const char* fragmentPath_Yellow = "shaders/shader_yellow.fs";
+
+/* Textures */
+const char* woodenTexture = "textures/container.jpg";
 
 /* Callbacks. */
 
@@ -63,15 +68,43 @@ int main() {
 
 	float vertices1[] = {
 		/* First triangle */
-		-0.5f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-	   -0.25f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-		 0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+		-0.5f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+	   -0.25f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,
+		 0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f
 	},
 	vertices2[] = {
-		 0.0f,  0.0f, 0.0f,
-		0.25f,  0.5f, 0.0f,
-		 0.5f,  0.0f, 0.0f,
+			 0.0f,  0.0f, 0.0f,
+			0.25f,  0.5f, 0.0f,
+			 0.5f,  0.0f, 0.0f,
+	},
+	texCoords[] = {
+		0.0f, 0.0f,
+		0.5f, 1.0f,
+		1.0f, 0.0f
 	};
+
+	/* Texture loading */
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height, nrChannels;
+	unsigned char* textureData = stbi_load(woodenTexture, &width, &height, &nrChannels, 0);
+
+	if (textureData) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture from file" << std::endl;
+	}
+
+	stbi_image_free(textureData);
 
 	/*unsigned int indices[] = {
 		0, 1, 3,
@@ -104,14 +137,15 @@ int main() {
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	/* Specify vertx attributes for the vertex shader. */
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	/* Since vertex attributes are disabled by default, we need to manually enable them. */
 	glEnableVertexAttribArray(0);
 
-	/* Specify vertx attributes for the vertex shader. */
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	/* Since vertex attributes are disabled by default, we need to manually enable them. */
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -156,6 +190,7 @@ int main() {
 
 		shader1.use();
 		shader1.setVecN("posOffset", posOffset, 3);
+		glBindTexture(GL_TEXTURE_2D, texture);
 		glBindVertexArray(VAO1);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glBindVertexArray(0);

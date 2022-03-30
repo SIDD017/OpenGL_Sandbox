@@ -29,9 +29,9 @@ x64/Debug/Aurora.obj
 .vs/learnopengl_project/v16/Browse.VC.db
 .vs/learnopengl_project/v16/Browse.VC.db-shm
 .vs/learnopengl_project/v16/.suo
+.vs/
+x64/
 learnopengl_project.sln
 learnopengl_project.vcxproj
 learnopengl_project.vcxproj.filters
 learnopengl_project.vcxproj.user
-.vs/
-x64/ 
