@@ -12,6 +12,9 @@ const char* fragmentPath_Yellow = "shaders/shader_yellow.fs";
 
 /* Textures */
 const char* woodenTexture = "textures/container.jpg";
+const char* faceTexture = "textures/awesomeface.png";
+const char* coolTexture = "textures/cool.png";
+const char* dvdtexture = "textures/dvd.png";
 
 /* Callbacks. */
 
@@ -55,38 +58,12 @@ int main() {
 	 * - Assigned the context of the window object as our main OpenGL context
 	 * - Initialized GLAD to retrieve function pointers for OpenGL */
 
-	/* Shader Compilation */
-
-	/* Create a shader object. */
-	Shader shader1(vertexPath, fragmentPath);
-	Shader shader2(vertexPath, fragmentPath_Yellow);
-
-	/* Number of available vertex attributes for current hardware configuration. */
-	int nrAttributes;
-	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-	std::cout << "Maximum number of vertex attributes supported : " << nrAttributes << std::endl;
-
-	float vertices1[] = {
-		/* First triangle */
-		-0.5f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-	   -0.25f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,
-		 0.0f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f
-	},
-	vertices2[] = {
-			 0.0f,  0.0f, 0.0f,
-			0.25f,  0.5f, 0.0f,
-			 0.5f,  0.0f, 0.0f,
-	},
-	texCoords[] = {
-		0.0f, 0.0f,
-		0.5f, 1.0f,
-		1.0f, 0.0f
-	};
-
-	/* Texture loading */
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	 /* Texture loading */
+	stbi_set_flip_vertically_on_load(true);
+	unsigned int texture1, texture2;
+	glGenTextures(1, &texture1);
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture1);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -104,7 +81,48 @@ int main() {
 		std::cout << "Failed to load texture from file" << std::endl;
 	}
 
+	glBindTexture(GL_TEXTURE_2D, texture2);
+	unsigned char* faceData = stbi_load(coolTexture, &width, &height, &nrChannels, 0);
+	if (faceData) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, faceData);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture from file" << std::endl;
+	}
+
 	stbi_image_free(textureData);
+
+	/* Shader Compilation */
+
+	/* Create a shader object. */
+	Shader shader1(vertexPath, fragmentPath);
+	Shader shader2(vertexPath, fragmentPath_Yellow);
+
+	/* Number of available vertex attributes for current hardware configuration. */
+	int nrAttributes;
+	glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+	std::cout << "Maximum number of vertex attributes supported : " << nrAttributes << std::endl;
+
+	float vertices1[] = {
+		/* First triangle */
+		0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+	   -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+		0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+	   -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+	   -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+	    0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f
+	},
+	vertices2[] = {
+			 0.0f,  0.0f, 0.0f,
+			0.25f,  0.5f, 0.0f,
+			 0.5f,  0.0f, 0.0f,
+	},
+	texCoords[] = {
+		0.0f, 0.0f,
+		0.5f, 1.0f,
+		1.0f, 0.0f
+	};
 
 	/*unsigned int indices[] = {
 		0, 1, 3,
@@ -174,6 +192,11 @@ int main() {
 	/* Render in wireframe mode. */
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	/* Specify correct uniforms as per our defined texture units. */
+	shader1.use();
+	shader1.setInt("sourceTexture1", 0);
+	shader1.setInt("sourceTexture2", 1);
+
 	/* Render loop */
 	while(!glfwWindowShouldClose(window)){
 
@@ -190,9 +213,12 @@ int main() {
 
 		shader1.use();
 		shader1.setVecN("posOffset", posOffset, 3);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 		glBindVertexArray(VAO1);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
 		shader2.use();
 		float greenVec[] = { 0.0f, greenValue, 0.0f, 1.0f };
