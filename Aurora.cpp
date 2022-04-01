@@ -1,5 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "stb_image.h"
 #include <iostream>
 
@@ -18,18 +21,20 @@ const char* dvdtexture = "textures/dvd.png";
 
 /* Callbacks. */
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+void framebuffer_size_callback(GLFWwindow *window, int width, int height) 
+{
 	glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow *window) {
+void processInput(GLFWwindow *window) 
+{
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
 }
 
-int main() {
-
+int main() 
+{
 	/* Initialize GLFW and specify OpenGL version to 3.3 (core profile). */
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -97,7 +102,6 @@ int main() {
 
 	/* Create a shader object. */
 	Shader shader1(vertexPath, fragmentPath);
-	Shader shader2(vertexPath, fragmentPath_Yellow);
 
 	/* Number of available vertex attributes for current hardware configuration. */
 	int nrAttributes;
@@ -113,11 +117,6 @@ int main() {
 	   -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,
 	    0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f
 	},
-	vertices2[] = {
-			 0.0f,  0.0f, 0.0f,
-			0.25f,  0.5f, 0.0f,
-			 0.5f,  0.0f, 0.0f,
-	},
 	texCoords[] = {
 		0.0f, 0.0f,
 		0.5f, 1.0f,
@@ -130,17 +129,15 @@ int main() {
 	};*/
 
 	/* Generate a OpenGL buffer object and get a reference to it through an ID. */
-	unsigned int VBO1, VBO2;
+	unsigned int VBO1;
 	glGenBuffers(1, &VBO1);
-	glGenBuffers(1, &VBO2);
 
 	/* Element Buffer Object */
 	//unsigned int EBO;
 	//glGenBuffers(1, &EBO);
 
-	unsigned int VAO1, VAO2;
+	unsigned int VAO1;
 	glGenVertexArrays(1, &VAO1);
-	glGenVertexArrays(1, &VAO2);
 	glBindVertexArray(VAO1);
 
 	/* Bind the newly created buffer object to the GL_ARRAY_BUFFER target.
@@ -168,27 +165,6 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
-	glBindVertexArray(VAO2);
-
-	/* Bind the newly created buffer object to the GL_ARRAY_BUFFER target.
-	 *
-	 * After this any subsequent calls we make to the GL_ARRAY_BUFFER TYPE will
-	 * access the newly created VBO instead. */
-	glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-	/* Copy the vertex data into the currently bound buffer's memory */
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	/* Specify vertx attributes for the vertex shader. */
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-	/* Since vertex attributes are disabled by default, we need to manually enable them. */
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
 	/* Render in wireframe mode. */
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -207,24 +183,19 @@ int main() {
 		glClearColor(0.2f, 0.3f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		float timeValue = glfwGetTime();
-		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-		float posOffset[] = { greenValue, 0.0f, 0.0f, 1.0f };
-
 		shader1.use();
-		shader1.setVecN("posOffset", posOffset, 3);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 		glBindVertexArray(VAO1);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		glBindVertexArray(0);
-		shader2.use();
-		float greenVec[] = { 0.0f, greenValue, 0.0f, 1.0f };
-		shader2.setVecN("vertColor", greenVec, 4);
-		glBindVertexArray(VAO2);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		/* Transformation */
+		glm::mat4 trans = glm::mat4(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+		trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0, 0.0, 1.0));
+		unsigned int transformLoc = glGetUniformLocation(shader1.ID, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans));
 		glBindVertexArray(0);
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		//glBindVertexArray(0);
@@ -235,12 +206,9 @@ int main() {
 	}
 
 	glDeleteVertexArrays(1, &VAO1);
-	glDeleteVertexArrays(1, &VAO2);
 	glDeleteBuffers(1, &VBO1);
-	glDeleteBuffers(1, &VBO2);
 	//glDeleteBuffers(1, &EBO);
 	shader1.deleteProgram();
-	shader2.deleteProgram();
 
 	glfwTerminate();
 	return 0;
