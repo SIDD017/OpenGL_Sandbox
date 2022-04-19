@@ -8,18 +8,29 @@
 
 #include "shader.h"
 
-/* Shaders */
+#define SCR_WIDTH 800
+#define SCR_HEIGHT 600
+
+/** Shaders */
 const char* vertexPath = "shaders/shader.vs";
 const char* fragmentPath = "shaders/shader.fs";
 const char* fragmentPath_Yellow = "shaders/shader_yellow.fs";
 
-/* Textures */
+/** Textures */
 const char* woodenTexture = "textures/container.jpg";
 const char* faceTexture = "textures/awesomeface.png";
 const char* coolTexture = "textures/cool.png";
 const char* dvdtexture = "textures/dvd.png";
 
-/* Callbacks. */
+/** Camera Control Variables */
+/* Defaults */
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool first_mouse = true;	
+
+/** Callbacks. */
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) 
 {
@@ -30,6 +41,66 @@ void processInput(GLFWwindow *window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
+	}
+	const float cameraSpeed = 2.5f * deltaTime;
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		cameraPos += cameraSpeed * cameraFront;
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		cameraPos -= cameraSpeed * cameraFront;
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
+	}
+}
+
+void mouse_callback(GLFWwindow *window, double xPos, double yPos) 
+{
+	/* Reset position if mouse control is captured for the first time since the application was run. */
+	if (first_mouse) {
+		lastX = xPos;
+		lastY = yPos;
+		first_mouse = false;
+	}
+
+	float xOffset = xPos - lastX;
+	float yOffset = lastY - yPos;
+	lastX = xPos;
+	lastY = yPos;
+
+	const float sensitivity = 0.1f;
+	xOffset *= sensitivity;
+	yOffset *= sensitivity;
+
+	yaw += xOffset;
+	pitch += yOffset;
+
+	/* Angle constraints */
+	if (pitch > 89.0f) {
+		pitch = 89.0f;
+	}
+	if (pitch < -89.0f) {
+		pitch = -89.0f;
+	}
+
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+	direction.y = sin(glm::radians(pitch));
+	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+	cameraFront = glm::normalize(direction);
+}
+
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) 
+{
+	fov -= (float)yoffset;
+	if (fov < 1.0f) {
+		fov = 1.0f;
+	}
+	if (fov > 45.0f) {
+		fov = 45.0f;
 	}
 }
 
@@ -42,7 +113,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	/* Create a window object that holds all the required window information. */
-	GLFWwindow* window = glfwCreateWindow(800, 600, "Aurora", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Aurora", NULL, NULL);
 	if (!window) {
 		std::cout << "Failed to create GLFW Window\n";
 		glfwTerminate();
@@ -51,6 +122,8 @@ int main()
 	/* Make the context of our window the main context on the current thread. */
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 
 	/* Initialize GLAD to get function pointers for OpenGL. */
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -234,8 +307,15 @@ int main()
 	shader1.setInt("sourceTexture1", 0);
 	shader1.setInt("sourceTexture2", 1);
 
+	/* Mouse input */
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	/* Render loop */
 	while(!glfwWindowShouldClose(window)){
+
+		float currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 
 		/* Input */
 		processInput(window);
@@ -245,16 +325,16 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		/* Transformation */
-		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 view;
 		glm::mat4 projection;
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-		projection = glm::perspective(glm::radians(45.0f), 800.f / 600.0f, 0.1f, 100.0f);
+		view = glm::lookAt(cameraPos, cameraFront + cameraPos, cameraUp);
+		projection = glm::perspective(glm::radians(fov), 800.f / 600.0f, 0.1f, 100.0f);
 
 		shader1.use();
 		/* Transformation Uniforms */
 		int modelLoc = glGetUniformLocation(shader1.ID, "model");
 		int viewLoc = glGetUniformLocation(shader1.ID, "view");
-		int projectionLoc = glGetUniformLocation(shader1.ID, "projection");
+		int projectionLoc = glGetUniformLocation(shader1. ID, "projection");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 		glActiveTexture(GL_TEXTURE0);
