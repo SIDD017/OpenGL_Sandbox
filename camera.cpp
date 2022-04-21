@@ -33,10 +33,10 @@ void Camera::process_keyboard(Camera_Movement direction, float deltaTime)
 		position -= front * velocity;
 	}
 	if (direction == CAMERA_RIGHT) {
-		position -= right * velocity;
+		position += right * velocity;
 	}
 	if (direction == CAMERA_LEFT) {
-		position += right * velocity;
+		position -= right * velocity;
 	}
 }
 
@@ -80,5 +80,5 @@ void Camera::update_camera_vectors()
 	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 	front = glm::normalize(direction);
 	right = glm::normalize(glm::cross(front, worldUp));
-	up = glm::normalize(glm::cross(front, right));
+	up = glm::normalize(glm::cross(right, front));
 }
