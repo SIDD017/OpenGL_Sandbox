@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "shader.h"
+#include "camera.h"
 
 #define SCR_WIDTH 800
 #define SCR_HEIGHT 600
@@ -22,7 +23,8 @@ const char* faceTexture = "textures/awesomeface.png";
 const char* coolTexture = "textures/cool.png";
 const char* dvdtexture = "textures/dvd.png";
 
-/** Camera Control Variables */
+/* Camera */
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));	
 /* Defaults */
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -42,18 +44,17 @@ void processInput(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
-	const float cameraSpeed = 2.5f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		cameraPos += cameraSpeed * cameraFront;
+		camera.process_keyboard(CAMERA_FORWARD, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		cameraPos -= cameraSpeed * cameraFront;
+		camera.process_keyboard(CAMERA_BACKWARD, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		cameraPos -= cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
+		camera.process_keyboard(CAMERA_LEFT, deltaTime);
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		cameraPos += cameraSpeed * glm::normalize(glm::cross(cameraFront, cameraUp));
+		camera.process_keyboard(CAMERA_RIGHT, deltaTime);
 	}
 }
 
@@ -71,37 +72,12 @@ void mouse_callback(GLFWwindow *window, double xPos, double yPos)
 	lastX = xPos;
 	lastY = yPos;
 
-	const float sensitivity = 0.1f;
-	xOffset *= sensitivity;
-	yOffset *= sensitivity;
-
-	yaw += xOffset;
-	pitch += yOffset;
-
-	/* Angle constraints */
-	if (pitch > 89.0f) {
-		pitch = 89.0f;
-	}
-	if (pitch < -89.0f) {
-		pitch = -89.0f;
-	}
-
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(direction);
+	camera.process_mouse_movement(xOffset, yOffset);
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) 
 {
-	fov -= (float)yoffset;
-	if (fov < 1.0f) {
-		fov = 1.0f;
-	}
-	if (fov > 45.0f) {
-		fov = 45.0f;
-	}
+	camera.process_mouse_scroll(static_cast<float>(yoffset));
 }
 
 int main() 
@@ -327,8 +303,8 @@ int main()
 		/* Transformation */
 		glm::mat4 view;
 		glm::mat4 projection;
-		view = glm::lookAt(cameraPos, cameraFront + cameraPos, cameraUp);
-		projection = glm::perspective(glm::radians(fov), 800.f / 600.0f, 0.1f, 100.0f);
+		view = camera.get_view_matrix();
+		projection = glm::perspective(glm::radians(camera.zoom), 800.f / 600.0f, 0.1f, 100.0f);
 
 		shader1.use();
 		/* Transformation Uniforms */
