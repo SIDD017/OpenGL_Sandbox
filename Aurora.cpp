@@ -62,15 +62,15 @@ void mouse_callback(GLFWwindow *window, double xPos, double yPos)
 {
 	/* Reset position if mouse control is captured for the first time since the application was run. */
 	if (first_mouse) {
-		lastX = xPos;
-		lastY = yPos;
+		lastX = static_cast<float>(xPos);
+		lastY = static_cast<float>(yPos);
 		first_mouse = false;
 	}
 
-	float xOffset = xPos - lastX;
-	float yOffset = lastY - yPos;
-	lastX = xPos;
-	lastY = yPos;
+	float xOffset = static_cast<float>(xPos) - lastX;
+	float yOffset = lastY - static_cast<float>(yPos);
+	lastX = static_cast<float>(xPos);
+	lastY = static_cast<float>(yPos);
 
 	camera.process_mouse_movement(xOffset, yOffset);
 }
@@ -289,7 +289,7 @@ int main()
 	/* Render loop */
 	while(!glfwWindowShouldClose(window)){
 
-		float currentFrame = glfwGetTime();
+		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
