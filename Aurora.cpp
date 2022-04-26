@@ -311,9 +311,11 @@ int main()
 		view = camera.get_view_matrix();
 		projection = glm::perspective(glm::radians(camera.zoom), 800.f / 600.0f, 0.1f, 100.0f);
 
-		float lightposition[3] = {cubePositions[1].x, cubePositions[1].y, cubePositions[1].z};
+		float lightposition[3] = { cubePositions[1].x, cubePositions[1].y, cubePositions[1].z };
+		float viewerposition[3] = {camera.position.x, camera.position.y, camera.position.z};
 		shader1.use();
 		shader1.setVecN("lightPos", lightposition, 3);
+		shader1.setVecN("viewPos", viewerposition, 3);
 		/* Transformation Uniforms */
 		int modelLoc = glGetUniformLocation(shader1.ID, "model");
 		int viewLoc = glGetUniformLocation(shader1.ID, "view");
