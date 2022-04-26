@@ -160,47 +160,47 @@ int main()
 	std::cout << "Maximum number of vertex attributes supported : " << nrAttributes << std::endl;
 
 	float vertices[] = {
-	-0.5f, -0.5f, -0.5f,
-	 0.5f, -0.5f, -0.5f,
-	 0.5f,  0.5f, -0.5f,
-	 0.5f,  0.5f, -0.5f,
-	-0.5f,  0.5f, -0.5f,
-	-0.5f, -0.5f, -0.5f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-	-0.5f, -0.5f,  0.5f,
-	 0.5f, -0.5f,  0.5f,
-	 0.5f,  0.5f,  0.5f,
-	 0.5f,  0.5f,  0.5f,
-	-0.5f,  0.5f,  0.5f,
-	-0.5f, -0.5f,  0.5f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-	-0.5f,  0.5f,  0.5f,
-	-0.5f,  0.5f, -0.5f,
-	-0.5f, -0.5f, -0.5f,
-	-0.5f, -0.5f, -0.5f,
-	-0.5f, -0.5f,  0.5f,
-	-0.5f,  0.5f,  0.5f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-	 0.5f,  0.5f,  0.5f,
-	 0.5f,  0.5f, -0.5f,
-	 0.5f, -0.5f, -0.5f,
-	 0.5f, -0.5f, -0.5f,
-	 0.5f, -0.5f,  0.5f,
-	 0.5f,  0.5f,  0.5f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-	-0.5f, -0.5f, -0.5f,
-	 0.5f, -0.5f, -0.5f,
-	 0.5f, -0.5f,  0.5f,
-	 0.5f, -0.5f,  0.5f,
-	-0.5f, -0.5f,  0.5f,
-	-0.5f, -0.5f, -0.5f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-	-0.5f,  0.5f, -0.5f,
-	 0.5f,  0.5f, -0.5f,
-	 0.5f,  0.5f,  0.5f,
-	 0.5f,  0.5f,  0.5f,
-	-0.5f,  0.5f,  0.5f,
-	-0.5f,  0.5f, -0.5f
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
 	//float vertices1[] = {
@@ -261,9 +261,14 @@ int main()
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	/* Specify vertex attributes for the vertex shader. */
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	/* Since vertex attributes are disabled by default, we need to manually enable them. */
 	glEnableVertexAttribArray(0);
+
+	/* Specify vertex attributes for the vertex shader. */
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	/* Since vertex attributes are disabled by default, we need to manually enable them. */
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -287,7 +292,7 @@ int main()
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	/* Render loop */
-	while(!glfwWindowShouldClose(window)){
+	while (!glfwWindowShouldClose(window)) {
 
 		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
@@ -297,7 +302,7 @@ int main()
 		processInput(window);
 
 		/* Render commands */
-		glClearColor(0.2f, 0.3f, 0.2f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		/* Transformation */
@@ -306,7 +311,9 @@ int main()
 		view = camera.get_view_matrix();
 		projection = glm::perspective(glm::radians(camera.zoom), 800.f / 600.0f, 0.1f, 100.0f);
 
+		float lightposition[3] = {cubePositions[1].x, cubePositions[1].y, cubePositions[1].z};
 		shader1.use();
+		shader1.setVecN("lightPos", lightposition, 3);
 		/* Transformation Uniforms */
 		int modelLoc = glGetUniformLocation(shader1.ID, "model");
 		int viewLoc = glGetUniformLocation(shader1.ID, "view");
