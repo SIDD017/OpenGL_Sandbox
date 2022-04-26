@@ -203,33 +203,10 @@ int main()
 	-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
-	//float vertices1[] = {
-		/* First triangle */
-		/*0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
-	   -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
-		0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
-	   -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
-	   -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f,
-	    0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f
-	},
-	texCoords[] = {
-		0.0f, 0.0f,
-		0.5f, 1.0f,
-		1.0f, 0.0f
-	};*/
-
 	/* Cube object positions */
 	glm::vec3 cubePositions[] = {
 		glm::vec3(0.0f,  0.0f,  0.0f),
 		glm::vec3(2.0f,  2.0f, -4.0f),
-		/*glm::vec3(-1.5f, -2.2f, -2.5f),
-		glm::vec3(-3.8f, -2.0f, -12.3f),
-		glm::vec3(2.4f, -0.4f, -3.5f),
-		glm::vec3(-1.7f,  3.0f, -7.5f),
-		glm::vec3(1.3f, -2.0f, -2.5f),
-		glm::vec3(1.5f,  2.0f, -2.5f),
-		glm::vec3(1.5f,  0.2f, -1.5f),
-		glm::vec3(-1.3f,  1.0f, -1.5f)*/
 	};
 
 	unsigned int indices[] = {
@@ -314,7 +291,20 @@ int main()
 		float lightposition[3] = { cubePositions[1].x, cubePositions[1].y, cubePositions[1].z };
 		float viewerposition[3] = {camera.position.x, camera.position.y, camera.position.z};
 		shader1.use();
-		shader1.setVecN("lightPos", lightposition, 3);
+		float material_ambient[3] = { 1.0f, 0.5f, 0.31f };
+		float material_specular[3] = { 0.5f, 0.5f, 0.5f };
+		float material_diffuse[3] = { 1.0f, 0.5f, 0.31f };
+		float light_ambient[3] = { 0.2f, 0.2f, 0.2f };
+		float light_specular[3] = { 1.0f, 1.0f, 1.0f };
+		float light_diffuse[3] = { 0.5f, 0.5f, 0.5f };
+		shader1.setVecN("material.ambient", material_ambient, 3);
+		shader1.setVecN("material.specular", material_specular, 3);
+		shader1.setVecN("material.diffuse", material_diffuse, 3);
+		shader1.setVecN("light.ambient", light_ambient, 3);
+		shader1.setVecN("light.specular", light_specular, 3);
+		shader1.setVecN("light.diffuse", light_diffuse, 3);
+		shader1.setFloat("material.shinniness", 32.0f);
+		shader1.setVecN("light.position", lightposition, 3);
 		shader1.setVecN("viewPos", viewerposition, 3);
 		/* Transformation Uniforms */
 		int modelLoc = glGetUniformLocation(shader1.ID, "model");
