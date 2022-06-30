@@ -227,10 +227,6 @@ int main()
 	unsigned int VBO1;
 	glGenBuffers(1, &VBO1);
 
-	/* Element Buffer Object */
-	//unsigned int EBO;
-	//glGenBuffers(1, &EBO);
-
 	unsigned int VAO1;
 	glGenVertexArrays(1, &VAO1);
 	glBindVertexArray(VAO1);
@@ -242,9 +238,6 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO1);
 	/* Copy the vertex data into the currently bound buffer's memory */
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	/* Specify vertex attributes for the vertex shader. */
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
@@ -270,15 +263,9 @@ int main()
 	/* Enable Depth testing */
 	glEnable(GL_DEPTH_TEST);
 	
-	/* Specify correct uniforms as per our defined texture units. */
-	//float lightcolor[3] = {1.0f, 1.0f, 1.0f};
-	//float objectcolor[3] = {1.0f, 0.5f, 0.31f};
 	shader1.use();
-	//shader1.setVecN("lightColor", lightcolor, 3);
-	//shader1.setVecN("objectColor", objectcolor, 3);
 	shader1.setInt("material.diffuse", 0);
 	shader1.setInt("material.specular", 1);
-	//shader1.setInt("sourceTexture2", 1);
 
 	/* Mouse input */
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -312,9 +299,7 @@ int main()
 		float light_ambient[3] = { 0.2f, 0.2f, 0.2f };
 		float light_specular[3] = { 1.0f, 1.0f, 1.0f };
 		float light_diffuse[3] = { 0.5f, 0.5f, 0.5f };
-		//shader1.setVecN("material.ambient", material_ambient, 3);
 		shader1.setVecN("material.specular", material_specular, 3);
-		//shader1.setVecN("material.diffuse", material_diffuse, 3);
 		shader1.setVecN("light.ambient", light_ambient, 3);
 		shader1.setVecN("light.specular", light_specular, 3);
 		shader1.setVecN("light.diffuse", light_diffuse, 3);
@@ -352,8 +337,6 @@ int main()
 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-		//glBindVertexArray(0);
 
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
@@ -362,7 +345,6 @@ int main()
 
 	glDeleteVertexArrays(1, &VAO1);
 	glDeleteBuffers(1, &VBO1);
-	//glDeleteBuffers(1, &EBO);
 	shader1.deleteProgram();
 
 	glfwTerminate();
