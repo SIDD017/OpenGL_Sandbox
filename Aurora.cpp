@@ -214,8 +214,16 @@ int main()
 
 	/* Cube object positions */
 	glm::vec3 cubePositions[] = {
-		glm::vec3(0.0f,  0.0f,  0.0f),
-		glm::vec3(2.0f,  2.0f, -4.0f),
+	glm::vec3(0.0f,  0.0f,  0.0f),
+	glm::vec3(2.0f,  5.0f, -15.0f),
+	glm::vec3(-1.5f, -2.2f, -2.5f),
+	glm::vec3(-3.8f, -2.0f, -12.3f),
+	glm::vec3(2.4f, -0.4f, -3.5f),
+	glm::vec3(-1.7f,  3.0f, -7.5f),
+	glm::vec3(1.3f, -2.0f, -2.5f),
+	glm::vec3(1.5f,  2.0f, -2.5f),
+	glm::vec3(1.5f,  0.2f, -1.5f),
+	glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
 	unsigned int indices[] = {
@@ -288,9 +296,9 @@ int main()
 		glm::mat4 view;
 		glm::mat4 projection;
 		view = camera.get_view_matrix();
-		projection = glm::perspective(glm::radians(camera.zoom), 800.f / 600.0f, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-		float lightposition[3] = { cubePositions[1].x, cubePositions[1].y, cubePositions[1].z };
+		//float lightposition[3] = { cubePositions[1].x, cubePositions[1].y, cubePositions[1].z };
 		float viewerposition[3] = {camera.position.x, camera.position.y, camera.position.z};
 		shader1.use();
 		float material_ambient[3] = { 1.0f, 0.5f, 0.31f };
@@ -299,12 +307,14 @@ int main()
 		float light_ambient[3] = { 0.2f, 0.2f, 0.2f };
 		float light_specular[3] = { 1.0f, 1.0f, 1.0f };
 		float light_diffuse[3] = { 0.5f, 0.5f, 0.5f };
-		shader1.setVecN("material.specular", material_specular, 3);
+		float light_direction[3] = {-0.2f, -1.0f, -0.3f};
+		shader1.setVecN("material.specular", material_specular, 3); 
 		shader1.setVecN("light.ambient", light_ambient, 3);
 		shader1.setVecN("light.specular", light_specular, 3);
 		shader1.setVecN("light.diffuse", light_diffuse, 3);
 		shader1.setFloat("material.shinniness", 32.0f);
-		shader1.setVecN("light.position", lightposition, 3);
+		shader1.setVecN("light.direction", light_direction, 3); 
+		//shader1.setVecN("light.position", lightposition, 3);
 		shader1.setVecN("viewPos", viewerposition, 3);
 		/* Transformation Uniforms */
 		int modelLoc = glGetUniformLocation(shader1.ID, "model");
@@ -317,15 +327,20 @@ int main()
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 		glBindVertexArray(VAO1);
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePositions[0]);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		for (unsigned int i = 0; i < 10; i++) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
-		light_shader.use();
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+
+		/*light_shader.use();*/
 		/* Transformation Uniforms */
-		modelLoc = glGetUniformLocation(light_shader.ID, "model");
+		/*modelLoc = glGetUniformLocation(light_shader.ID, "model");
 		viewLoc = glGetUniformLocation(light_shader.ID, "view");
 		projectionLoc = glGetUniformLocation(light_shader.ID, "projection");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
@@ -333,9 +348,9 @@ int main()
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, cubePositions[1]);
 		model = glm::scale(model, glm::vec3(0.2f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));*/
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
 		/* Check and call events and all buffers. */
