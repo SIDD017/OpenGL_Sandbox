@@ -298,7 +298,7 @@ int main()
 		view = camera.get_view_matrix();
 		projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
-		//float lightposition[3] = { cubePositions[1].x, cubePositions[1].y, cubePositions[1].z };
+		float lightposition[3] = { camera.position.x, camera.position.y, camera.position.z };
 		float viewerposition[3] = {camera.position.x, camera.position.y, camera.position.z};
 		shader1.use();
 		float material_ambient[3] = { 1.0f, 0.5f, 0.31f };
@@ -307,14 +307,19 @@ int main()
 		float light_ambient[3] = { 0.2f, 0.2f, 0.2f };
 		float light_specular[3] = { 1.0f, 1.0f, 1.0f };
 		float light_diffuse[3] = { 0.5f, 0.5f, 0.5f };
-		float light_direction[3] = {-0.2f, -1.0f, -0.3f};
+		float light_direction[3] = { camera.front.x, camera.front.y, camera.front.z };
 		shader1.setVecN("material.specular", material_specular, 3); 
 		shader1.setVecN("light.ambient", light_ambient, 3);
 		shader1.setVecN("light.specular", light_specular, 3);
 		shader1.setVecN("light.diffuse", light_diffuse, 3);
 		shader1.setFloat("material.shinniness", 32.0f);
-		shader1.setVecN("light.direction", light_direction, 3); 
-		//shader1.setVecN("light.position", lightposition, 3);
+		shader1.setVecN("light.direction", light_direction, 3);
+		shader1.setFloat("light.cutoff", glm::cos(glm::radians(12.5f)));
+		shader1.setFloat("light.outerCutoff", glm::cos(glm::radians(17.5f)));
+		//shader1.setFloat("light.constant", 1.0f);
+		//shader1.setFloat("light.linear", 0.09f);
+		//shader1.setFloat("light.quadratic", 0.032f);
+		shader1.setVecN("light.position", lightposition, 3);
 		shader1.setVecN("viewPos", viewerposition, 3);
 		/* Transformation Uniforms */
 		int modelLoc = glGetUniformLocation(shader1.ID, "model");
