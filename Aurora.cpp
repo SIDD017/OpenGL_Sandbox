@@ -316,9 +316,6 @@ int main()
 		shader1.setVecN("light.direction", light_direction, 3);
 		shader1.setFloat("light.cutoff", glm::cos(glm::radians(12.5f)));
 		shader1.setFloat("light.outerCutoff", glm::cos(glm::radians(17.5f)));
-		//shader1.setFloat("light.constant", 1.0f);
-		//shader1.setFloat("light.linear", 0.09f);
-		//shader1.setFloat("light.quadratic", 0.032f);
 		shader1.setVecN("light.position", lightposition, 3);
 		shader1.setVecN("viewPos", viewerposition, 3);
 		/* Transformation Uniforms */
@@ -343,19 +340,6 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
-		/*light_shader.use();*/
-		/* Transformation Uniforms */
-		/*modelLoc = glGetUniformLocation(light_shader.ID, "model");
-		viewLoc = glGetUniformLocation(light_shader.ID, "view");
-		projectionLoc = glGetUniformLocation(light_shader.ID, "projection");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, cubePositions[1]);
-		model = glm::scale(model, glm::vec3(0.2f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));*/
-
-		//glDrawArrays(GL_TRIANGLES, 0, 36);
 		glBindVertexArray(0);
 
 		/* Check and call events and all buffers. */

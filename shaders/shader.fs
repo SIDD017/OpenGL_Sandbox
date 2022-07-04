@@ -57,11 +57,5 @@ void main()
 	diffuse *= intensity;
 	specular *= intensity;
 
-	//final color
-	//if(theta > light.cutoff) {
-		FragColor = vec4(ambient + diffuse + specular, 1.0);
-	//}
-	//else {
-		//FragColor = vec4(ambient, 1.0);
-	//}
+	FragColor = vec4(ambient + diffuse + specular, 1.0);
 }
