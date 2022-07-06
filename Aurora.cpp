@@ -8,6 +8,7 @@
 
 #include "shader.h"
 #include "camera.h"
+#include "mesh.h"
 
 #define SCR_WIDTH 800
 #define SCR_HEIGHT 600
