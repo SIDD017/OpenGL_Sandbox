@@ -315,23 +315,6 @@ int main()
 		float viewerposition[3] = { camera.position.x, camera.position.y, camera.position.z };
 		shader1.setVecN("viewPos", viewerposition, 3);
 		shader1.setFloat("material.shinniness", 32.0f);
-
-		//float material_specular[3] = { 0.5f, 0.5f, 0.5f };
-		//shader1.setVecN("material.specular", material_specular, 3);
-
-		//float material_ambient[3] = { 1.0f, 0.5f, 0.31f };
-		//float material_diffuse[3] = { 1.0f, 0.5f, 0.31f };
-		/*float light_ambient[3] = {0.2f, 0.2f, 0.2f};
-		float light_specular[3] = { 1.0f, 1.0f, 1.0f };
-		float light_diffuse[3] = { 0.5f, 0.5f, 0.5f };*/
-		
-		//shader1.setVecN("light.ambient", light_ambient, 3);
-		//shader1.setVecN("light.specular", light_specular, 3);
-		//shader1.setVecN("light.diffuse", light_diffuse, 3);
-		//shader1.setVecN("light.direction", light_direction, 3);
-		//shader1.setFloat("light.cutoff", glm::cos(glm::radians(12.5f)));
-		//shader1.setFloat("light.outerCutoff", glm::cos(glm::radians(17.5f)));
-		//shader1.setVecN("light.position", lightposition, 3);
 		
 
 
@@ -447,9 +430,6 @@ int main()
 		}
 
 		light_shader.use();
-		//modelLoc = glGetUniformLocation(light_shader.ID, "model");
-		//viewLoc = glGetUniformLocation(light_shader.ID, "view");
-		//projectionLoc = glGetUniformLocation(light_shader.ID, "projection");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
