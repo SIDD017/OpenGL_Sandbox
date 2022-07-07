@@ -315,8 +315,6 @@ int main()
 		float viewerposition[3] = { camera.position.x, camera.position.y, camera.position.z };
 		shader1.setVecN("viewPos", viewerposition, 3);
 		shader1.setFloat("material.shinniness", 32.0f);
-		
-
 
 		float pointlightposition_0[3] = { pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z };
 		float pointlightposition_1[3] = { pointLightPositions[1].x, pointLightPositions[1].y, pointLightPositions[1].z };
