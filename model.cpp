@@ -12,9 +12,7 @@ void Model::Draw(Shader& shader)
 void Model::loadModel(string const &path)
 {
 	Assimp::Importer import;
-	printf("loading now\n");
 	const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-	printf("done loading\n");
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
