@@ -1,23 +1,32 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
 #include "stb_image.h"
 #include <iostream>
 
 #include "shader.h"
 #include "camera.h"
 #include "mesh.h"
+#include "model.h"
 
 #define SCR_WIDTH 800
 #define SCR_HEIGHT 600
 
 /** Shaders */
 const char* vertexPath = "shaders/shader.vs";
-const char* fragmentPath = "shaders/shader.fs";
+//const char* fragmentPath = "shaders/shader.fs";
+const char* fragmentPath = "shaders/light_shader.fs";
+
+const string modelPath = "models/backpack.obj";
+
+#if 0
 const char* fragmentPath_Yellow = "shaders/shader_yellow.fs";
 const char* lightFragmentPath = "shaders/light_shader.fs";
+#endif
 
 /** Textures */
 const char* woodenTexture = "textures/container.jpg";
@@ -84,6 +93,8 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 	camera.process_mouse_scroll(static_cast<float>(yoffset));
 }
 
+#if 0
+
 unsigned int loadTexture(const char *texture_path)
 {
 	unsigned int texture;
@@ -120,6 +131,8 @@ unsigned int loadTexture(const char *texture_path)
 	return texture;
 }
 
+#endif
+
 int main() 
 {
 	/* Initialize GLFW and specify OpenGL version to 3.3 (core profile). */
@@ -127,6 +140,10 @@ int main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
 	/* Create a window object that holds all the required window information. */
 	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Aurora", NULL, NULL);
@@ -141,6 +158,9 @@ int main()
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
+	/* Capture the mouse */
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	/* Initialize GLAD to get function pointers for OpenGL. */
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD\n";
@@ -154,6 +174,7 @@ int main()
 
 	 /* Texture loading */
 	stbi_set_flip_vertically_on_load(true);
+#if 0
 	unsigned int texture1 = loadTexture(containertexture);
 	unsigned int texture2 = loadTexture(containertexture_specular);
 
@@ -283,18 +304,23 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+#endif
+
 	/* Render in wireframe mode. */
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	/* Enable Depth testing */
 	glEnable(GL_DEPTH_TEST);
-	
+
+	Shader shader(vertexPath, fragmentPath);
+
+	Model ourModel(modelPath);
+
+#if 0
 	shader1.use();
 	shader1.setInt("material.diffuse", 0);
 	shader1.setInt("material.specular", 1);
-
-	/* Mouse input */
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+#endif
 
 	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
@@ -310,7 +336,23 @@ int main()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		shader.use();
 
+		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = camera.get_view_matrix();
+		int projectionLoc = glGetUniformLocation(shader.ID, "projection");
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		int viewLoc = glGetUniformLocation(shader.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		int modelLoc = glGetUniformLocation(shader.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		ourModel.Draw(shader);
+
+#if 0
 		shader1.use();
 		float viewerposition[3] = { camera.position.x, camera.position.y, camera.position.z };
 		shader1.setVecN("viewPos", viewerposition, 3);
@@ -445,16 +487,22 @@ int main()
 
 		//glBindVertexArray(0);
 
+#endif
+
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+#if 0
 	glDeleteVertexArrays(1, &VAO1);
 	glDeleteVertexArrays(1, &VAO2);
 	glDeleteBuffers(1, &VBO1);
 	shader1.deleteProgram();
 	light_shader.deleteProgram();
+#endif
+
+	shader.deleteProgram();
 
 	glfwTerminate(); 
 	return 0;

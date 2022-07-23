@@ -17,17 +17,19 @@ using std::vector;
 class Model
 {
 public:
-	Model(char* path)
+	vector<Mesh> meshes;
+	string directory;
+	vector<Texture> textures_loaded;
+	bool gammaCorrection;
+
+	Model(string const &path, bool gamma = false) : gammaCorrection(gamma)
 	{
 		loadModel(path);
 	}
 	void Draw(Shader &shader);
 private:
-	vector<Mesh> meshes;
-	string directory;
-	vector<Texture> textures_loaded;
 
-	void loadModel(string path);
+	void loadModel(string const &path);
 	void processNode(aiNode *node, const aiScene *scene);
 	Mesh processMesh(aiMesh *mesh, const aiScene *scene);
 	vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName);
