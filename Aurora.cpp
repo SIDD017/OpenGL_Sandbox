@@ -135,6 +135,8 @@ int main()
 
 	/* Enable Depth testing */
 	glEnable(GL_DEPTH_TEST);
+	/* Decides the test condition for depth testing. */
+	//glDepthFunc(GL_LESS);
 
 	Shader shader(vertexPath, fragmentPath);
 
