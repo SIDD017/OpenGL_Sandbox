@@ -18,7 +18,7 @@
 
 /** Shaders */
 const char* vertexPath = "shaders/shader.vs";
-//const char* fragmentPath = "shaders/shader.fs";
+const char* singleColorFragmentPath = "shaders/single_color_shader.fs";
 const char* fragmentPath = "shaders/light_shader.fs";
 
 const string modelPath = "models/backpack.obj";
@@ -133,12 +133,18 @@ int main()
 	/* Render in wireframe mode. */
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	/* Stencil testing */
+	glEnable(GL_STENCIL_TEST);
+	//glStencilMask(0x00);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	/* Enable Depth testing */
 	glEnable(GL_DEPTH_TEST);
 	/* Decides the test condition for depth testing. */
 	//glDepthFunc(GL_LESS);
 
 	Shader shader(vertexPath, fragmentPath);
+	Shader single_color_shader(vertexPath, singleColorFragmentPath);
 
 	Model ourModel(modelPath);
 
@@ -154,7 +160,12 @@ int main()
 
 		/* Render commands */
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+		glStencilMask(0x00);
+
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilMask(0xFF);
 
 		shader.use();
 
@@ -172,12 +183,36 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		ourModel.Draw(shader);
 
+		glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+		glDisable(GL_DEPTH_TEST);
+		single_color_shader.use();
+
+		projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		view = camera.get_view_matrix();
+		projectionLoc = glGetUniformLocation(single_color_shader.ID, "projection");
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		viewLoc = glGetUniformLocation(single_color_shader.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.1f, 1.1f, 1.1f));
+		modelLoc = glGetUniformLocation(single_color_shader.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		ourModel.Draw(single_color_shader);
+
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glEnable(GL_DEPTH_TEST);
+
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
 	shader.deleteProgram();
+	single_color_shader.deleteProgram();
 
 	glfwTerminate(); 
 	return 0;
