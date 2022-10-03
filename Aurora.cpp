@@ -12,6 +12,7 @@
 #include "camera.h"
 #include "mesh.h"
 #include "model.h"
+#include <map>
 
 #define SCR_WIDTH 1280
 #define SCR_HEIGHT 720
@@ -30,6 +31,7 @@ const char* coolTexture = "textures/cool.png";
 const char* dvdtexture = "textures/dvd.png";
 const char* wallTexture = "textures/wall.jpg";
 const char* vegetationTexture = "textures/grass.png";
+const char* transparent_window_texture = "textures/blending_transparent_window.png";
 const char* containertexture = "textures/container2.png";
 const char* containertexture_specular = "textures/container2_specular.png";
 
@@ -303,7 +305,10 @@ int main()
 	/* Cube and Plane Textures. */
 	unsigned int cubeTexture = loadTexture(containertexture);
 	unsigned int planeTexture = loadTexture(wallTexture);
-	unsigned int grassTexture = loadTexture(vegetationTexture);
+	unsigned int grassTexture = loadTexture(transparent_window_texture);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
@@ -352,11 +357,16 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		std::map<float, glm::vec3> sorted;
+		for (unsigned int i = 0; i < vegetation.size(); i++) {
+			float distance = glm::length(camera.position - vegetation[i]);
+			sorted[distance] = vegetation[i];
+		}
 		glBindVertexArray(grassVAO);
 		glBindTexture(GL_TEXTURE_2D, grassTexture);
-		for (unsigned int i = 0; i < vegetation.size(); i++) {
+		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
 			model = glm::mat4(1.0f);
-			model = glm::translate(model, vegetation[i]);
+			model = glm::translate(model, it->second);
 			modelLoc = glGetUniformLocation(shader.ID, "model");
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -370,6 +380,6 @@ int main()
 	shader.deleteProgram();
 	//single_color_shader.deleteProgram();
 
-	glfwTerminate(); 
+	glfwTerminate();  
 	return 0;
 }
