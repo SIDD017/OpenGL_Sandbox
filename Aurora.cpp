@@ -275,16 +275,6 @@ int main()
 		-5.0f, -0.5f, -5.0f,  0.0f, 2.0f,
 		 5.0f, -0.5f, -5.0f,  2.0f, 2.0f
 	};
-	float transparentVertices[] = {
-		// positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
-		0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
-		0.0f, -0.5f,  0.0f,  0.0f,  1.0f,
-		1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
-
-		0.0f,  0.5f,  0.0f,  0.0f,  0.0f,
-		1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
-		1.0f,  0.5f,  0.0f,  1.0f,  0.0f
-	};
 
 	float quadVertices[] = {
 		// positions   // texCoords
@@ -342,14 +332,6 @@ int main()
 		 1.0f, -1.0f,  1.0f
 	};
 
-	/* Grass leaves positions. */
-	vector<glm::vec3> vegetation; 
-	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f)); 
-	vegetation.push_back(glm::vec3(1.5f, 0.0f, 0.51f)); 
-	vegetation.push_back(glm::vec3(0.0f, 0.0f, 0.7f)); 
-	vegetation.push_back(glm::vec3(-0.3f, 0.0f, -2.3f)); 
-	vegetation.push_back(glm::vec3(0.5f, 0.0f, -0.6f)); 
-
 	/* Cube VAO */
 	unsigned int cubeVAO, cubeVBO;
 	glGenVertexArrays(1, &cubeVAO);
@@ -369,19 +351,6 @@ int main()
 	glBindVertexArray(planeVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glBindVertexArray(0);
-
-	/* Grass VAO */
-	unsigned int grassVAO, grassVBO;
-	glGenVertexArrays(1, &grassVAO);
-	glGenBuffers(1, &grassVBO);
-	glBindVertexArray(grassVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, grassVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), &transparentVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(1);
@@ -445,13 +414,9 @@ int main()
 	/* Cube and Plane Textures. */
 	unsigned int cubeTexture = loadTexture(containertexture);
 	unsigned int planeTexture = loadTexture(wallTexture);
-	unsigned int grassTexture = loadTexture(transparent_window_texture);
 
 	/* Skybox texture. */
 	unsigned int cubemapTexture = loadCubemap(cubemapFaces);
-
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	Shader shader(vertexPath, fragmentPath);
 	Shader quadShader(quadVertexPath, quadFragmentPath);
@@ -508,31 +473,15 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		/* Windows. */
-		std::map<float, glm::vec3> sorted;
-		for (unsigned int i = 0; i < vegetation.size(); i++) {
-			float distance = glm::length(camera.position - vegetation[i]);
-			sorted[distance] = vegetation[i];
-		}
-		glBindVertexArray(grassVAO);
-		glBindTexture(GL_TEXTURE_2D, grassTexture);
-		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, it->second);
-			modelLoc = glGetUniformLocation(shader.ID, "model");
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
-
 		/* Skybox. */
 		glDepthFunc(GL_LEQUAL);
 		skyboxShader.use();
 		model = glm::mat4(1.0f);
 		projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		view = glm::mat4(glm::mat3(camera.get_view_matrix()));
-		projectionLoc = glGetUniformLocation(shader.ID, "projection");
+		projectionLoc = glGetUniformLocation(skyboxShader.ID, "projection");
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		viewLoc = glGetUniformLocation(shader.ID, "view");
+		viewLoc = glGetUniformLocation(skyboxShader.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glBindVertexArray(skyboxVAO);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
