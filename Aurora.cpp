@@ -21,6 +21,8 @@
 const char* vertexPath = "shaders/shader.vs";
 const char* singleColorFragmentPath = "shaders/single_color_shader.fs";
 const char* fragmentPath = "shaders/light_shader.fs";
+const char* quadVertexPath = "shaders/quad.vs";
+const char* quadFragmentPath = "shaders/quad.fs";
 
 const string modelPath = "models/backpack.obj";
 
@@ -176,21 +178,6 @@ int main()
 	/* Render in wireframe mode. */
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	/* Stencil testing */
-	//glEnable(GL_STENCIL_TEST);
-	//glStencilMask(0x00);
-	//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-	/* Enable Depth testing */
-	glEnable(GL_DEPTH_TEST);
-	/* Decides the test condition for depth testing. */
-	glDepthFunc(GL_LESS);
-
-	Shader shader(vertexPath, fragmentPath);
-	//Shader single_color_shader(vertexPath, singleColorFragmentPath);
-
-	//Model ourModel(modelPath);
-
 	float cubeVertices[] = {
 		// positions          // texture Coords
 		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
@@ -256,6 +243,17 @@ int main()
 		1.0f,  0.5f,  0.0f,  1.0f,  0.0f
 	};
 
+	float quadVertices[] = {
+		// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f
+	};
+
 	/* Grass leaves positions. */
 	vector<glm::vec3> vegetation; 
 	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f)); 
@@ -302,6 +300,49 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 	glBindVertexArray(0);
 
+	/* Quad VAO. */
+	unsigned int quadVAO, quadVBO;
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glBindVertexArray(0);
+
+	/* New Framebuffer. */
+	unsigned int framebuffer;
+	glGenFramebuffers(1, &framebuffer); 
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+	/* Texture image to use as a color attachment to the new framebuffer. */
+	unsigned int textureColorBuffer;
+	glGenTextures(1, &textureColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	/* Attaching the texture coolor buffer to the new framebuffer object. */
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorBuffer, 0);
+
+	/* Render buffer object for depth and stencil testing. */
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, SCR_WIDTH, SCR_HEIGHT);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	/* Attach the render buffer object to the new framebuffer. */
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		std::cout << "ERROR::FRAMEBUFFER::Framebuffer is not complete!" << std::endl;
+	}
+	/* Rebind the default framebuffer. */
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	/* Cube and Plane Textures. */
 	unsigned int cubeTexture = loadTexture(containertexture);
 	unsigned int planeTexture = loadTexture(wallTexture);
@@ -309,6 +350,9 @@ int main()
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	Shader shader(vertexPath, fragmentPath);
+	Shader quadShader(quadVertexPath, quadFragmentPath);
 
 	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
@@ -320,9 +364,12 @@ int main()
 		/* Input */
 		processInput(window);
 
-		/* Render commands */
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		/* First pass : Use new framebuffer for rendering. */
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		/* Enable Depth testing */
+		glEnable(GL_DEPTH_TEST);
 
 		shader.use();
 
@@ -357,6 +404,7 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		/* Windows. */
 		std::map<float, glm::vec3> sorted;
 		for (unsigned int i = 0; i < vegetation.size(); i++) {
 			float distance = glm::length(camera.position - vegetation[i]);
@@ -372,12 +420,24 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
+		/* Second pass : Use defaut framebuffer. */
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		quadShader.use();
+		glBindVertexArray(quadVAO);
+		glDisable(GL_DEPTH_TEST);
+		glBindTexture(GL_TEXTURE_2D, textureColorBuffer);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
 	shader.deleteProgram();
+	quadShader.deleteProgram();
 	//single_color_shader.deleteProgram();
 
 	glfwTerminate();  
