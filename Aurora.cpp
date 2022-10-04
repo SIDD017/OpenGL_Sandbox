@@ -23,6 +23,8 @@ const char* singleColorFragmentPath = "shaders/single_color_shader.fs";
 const char* fragmentPath = "shaders/light_shader.fs";
 const char* quadVertexPath = "shaders/quad.vs";
 const char* quadFragmentPath = "shaders/quad.fs";
+const char* skyboxVertexPath = "shaders/cubemap.vs";
+const char* skyboxFragmentPath = "shaders/cubemap.fs";
 
 const string modelPath = "models/backpack.obj";
 
@@ -36,6 +38,20 @@ const char* vegetationTexture = "textures/grass.png";
 const char* transparent_window_texture = "textures/blending_transparent_window.png";
 const char* containertexture = "textures/container2.png";
 const char* containertexture_specular = "textures/container2_specular.png";
+
+
+/* NOTE: vector initialization should be done during declaration itself. C++ doesn't allow 
+ * assignment operations (or any operation tbh) to be done outside a class/function. */
+
+/* Cubemap textures. */
+vector<string> cubemapFaces{
+	"textures/skybox/right.jpg",
+	"textures/skybox/left.jpg",
+	"textures/skybox/top.jpg",
+	"textures/skybox/bottom.jpg",
+	"textures/skybox/front.jpg",
+	"textures/skybox/back.jpg"
+};
 
 /* Camera */
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));	
@@ -129,6 +145,33 @@ unsigned int loadTexture(char const* path)
 		std::cout << "Texture failed to load at path : " << path << std::endl;
 		stbi_image_free(data);
 	}
+
+	return textureID;
+}
+
+unsigned int loadCubemap(vector<std::string> faces)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+	int width, height, nrChannels;
+	for (unsigned int i = 0; i < faces.size(); i++) {
+		unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data) {
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			stbi_image_free(data);
+		}
+		else {
+			std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	return textureID;
 }
@@ -254,6 +297,51 @@ int main()
 		 1.0f,  1.0f,  1.0f, 1.0f
 	};
 
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f
+	};
+
 	/* Grass leaves positions. */
 	vector<glm::vec3> vegetation; 
 	vegetation.push_back(glm::vec3(-1.5f, 0.0f, -0.48f)); 
@@ -313,6 +401,17 @@ int main()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 	glBindVertexArray(0);
 
+	/* Skybox VAO. */
+	unsigned int skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glBindVertexArray(0);
+
 	/* New Framebuffer. */
 	unsigned int framebuffer;
 	glGenFramebuffers(1, &framebuffer); 
@@ -348,11 +447,15 @@ int main()
 	unsigned int planeTexture = loadTexture(wallTexture);
 	unsigned int grassTexture = loadTexture(transparent_window_texture);
 
+	/* Skybox texture. */
+	unsigned int cubemapTexture = loadCubemap(cubemapFaces);
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	Shader shader(vertexPath, fragmentPath);
 	Shader quadShader(quadVertexPath, quadFragmentPath);
+	Shader skyboxShader(skyboxVertexPath, skyboxFragmentPath);
 
 	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
@@ -368,17 +471,33 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		/* Skybox first. */
+		glDepthMask(GL_FALSE);
+		skyboxShader.use();
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = glm::mat4(glm::mat3(camera.get_view_matrix()));
+		int projectionLoc = glGetUniformLocation(shader.ID, "projection");
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		int viewLoc = glGetUniformLocation(shader.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glBindVertexArray(skyboxVAO);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDepthMask(GL_TRUE);
+
 		/* Enable Depth testing */
 		glEnable(GL_DEPTH_TEST);
 
 		shader.use();
 
-		glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = camera.get_view_matrix();
-		int projectionLoc = glGetUniformLocation(shader.ID, "projection");
+		model = glm::mat4(1.0f);
+		projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		view = camera.get_view_matrix();
+		projectionLoc = glGetUniformLocation(shader.ID, "projection");
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		int viewLoc = glGetUniformLocation(shader.ID, "view");
+		viewLoc = glGetUniformLocation(shader.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
 		/* Cubes. */
