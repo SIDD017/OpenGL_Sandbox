@@ -3,5 +3,10 @@ out vec4 FragColor;
 
 void main()
 {
-	FragColor = vec4(0.04, 0.28, 0.26, 1.0);
+	if(gl_FragCoord.x > 640) {
+		FragColor = vec4(0.04, 0.28, 0.26, 1.0);
+	}
+	else {
+		FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+	}
 }

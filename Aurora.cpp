@@ -336,13 +336,23 @@ int main()
 	unsigned int cubemapTexture = loadCubemap(cubemapFaces);
 
 	Shader shader(vertexPath, fragmentPath);
+	Shader singleColorShader(vertexPath, singleColorFragmentPath);
 	Shader skyboxShader(skyboxVertexPath, skyboxFragmentPath);
 
-	/* Face culling. */
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glFrontFace(GL_CW);
+	/* Get the uniform block id from the shader */
+	unsigned int uniformBlockSimple = glGetUniformBlockIndex(shader.ID, "Matrices");
+	unsigned int uniformBlockSingleColor = glGetUniformBlockIndex(singleColorShader.ID, "Matrices");
+	/* Link the uniform block id to a uniform binding point. */
+	glUniformBlockBinding(shader.ID, uniformBlockSimple, 0);
+	glUniformBlockBinding(singleColorShader.ID, uniformBlockSingleColor, 0);
 
+	/* Create a new uniform buffer object. */
+	unsigned int uboMatrices;
+	glGenBuffers(1, &uboMatrices);
+	glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+	glBufferData(GL_UNIFORM_BUFFER, 2 * sizeof(glm::mat4), NULL, GL_STATIC_DRAW);
+	/* Link ubo to uniform binding point. */
+	glBindBufferRange(GL_UNIFORM_BUFFER, 0, uboMatrices, 0, 2 * sizeof(glm::mat4));
 
 	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
@@ -360,15 +370,16 @@ int main()
 		/* Enable Depth testing */
 		glEnable(GL_DEPTH_TEST);
 
+		glBindBuffer(GL_UNIFORM_BUFFER, uboMatrices);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4), glm::value_ptr(projection));
+		glm::mat4 view = camera.get_view_matrix();
+		glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4), sizeof(glm::mat4), glm::value_ptr(view));
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 		/* Cubes. */
 		shader.use();
 		glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 view = camera.get_view_matrix();
-		int projectionLoc = glGetUniformLocation(shader.ID, "projection");
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		int viewLoc = glGetUniformLocation(shader.ID, "view");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		int cameraPosLoc = glGetUniformLocation(shader.ID, "cameraPos");
 		glUniform3f(cameraPosLoc, camera.position.x, camera.position.y, camera.position.z);
 		glBindVertexArray(cubeVAO);
@@ -379,9 +390,11 @@ int main()
 		int modelLoc = glGetUniformLocation(shader.ID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		singleColorShader.use();
 		model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
-		modelLoc = glGetUniformLocation(shader.ID, "model");
+		modelLoc = glGetUniformLocation(singleColorShader.ID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
@@ -391,10 +404,10 @@ int main()
 		model = glm::mat4(1.0f);
 		projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 		view = glm::mat4(glm::mat3(camera.get_view_matrix()));
-		projectionLoc = glGetUniformLocation(skyboxShader.ID, "projection");
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		viewLoc = glGetUniformLocation(skyboxShader.ID, "view");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		int projectionLoc1 = glGetUniformLocation(skyboxShader.ID, "projection");
+		glUniformMatrix4fv(projectionLoc1, 1, GL_FALSE, glm::value_ptr(projection));
+		int viewLoc1 = glGetUniformLocation(skyboxShader.ID, "view");
+		glUniformMatrix4fv(viewLoc1, 1, GL_FALSE, glm::value_ptr(view));
 		glBindVertexArray(skyboxVAO);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
