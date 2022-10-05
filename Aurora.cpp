@@ -28,6 +28,9 @@ const char* skyboxFragmentPath = "shaders/cubemap.fs";
 const char* simpleVertexPath = "shaders/simple.vs";
 const char* simpleGeometryPath = "shaders/simple.gs";
 const char* simpleFragmentPath = "shaders/simple.fs";
+const char* normalVertexPath = "shaders/normal.vs";
+const char* normalFragmentPath = "shaders/normal.fs";
+const char* normalGeometryPath = "shaders/normal.gs";
 
 const string modelPath = "models/backpack.obj";
 
@@ -216,6 +219,7 @@ int main()
 	stbi_set_flip_vertically_on_load(true);
 
 	Shader shader(simpleVertexPath, simpleFragmentPath, simpleGeometryPath);
+	Shader normalShader(normalVertexPath, normalFragmentPath, normalGeometryPath);
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -246,9 +250,18 @@ int main()
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		int timeLoc = glGetUniformLocation(shader.ID, "time");
 		shader.setFloat("time", static_cast<float>(glfwGetTime()));
-
 		// draw model
 		bag.Draw(shader);
+
+		normalShader.use();
+		projectionLoc = glGetUniformLocation(normalShader.ID, "projection");
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		viewLoc = glGetUniformLocation(normalShader.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		modelLoc = glGetUniformLocation(normalShader.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		// draw model
+		bag.Draw(normalShader);
 
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
