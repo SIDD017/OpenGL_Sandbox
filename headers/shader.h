@@ -15,7 +15,7 @@ public:
 	unsigned int ID;
 
 	/* Constructor: Reads and build the shader */
-	Shader(const char *vertexPath, const char *fragmentPath);
+	Shader(const char *vertexPath, const char *fragmentPath, const char* geometryPath = nullptr);
 
 	/* Use the shader */
 	void use();

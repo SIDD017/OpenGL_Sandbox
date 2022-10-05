@@ -25,6 +25,9 @@ const char* quadVertexPath = "shaders/quad.vs";
 const char* quadFragmentPath = "shaders/quad.fs";
 const char* skyboxVertexPath = "shaders/cubemap.vs";
 const char* skyboxFragmentPath = "shaders/cubemap.fs";
+const char* simpleVertexPath = "shaders/simple.vs";
+const char* simpleGeometryPath = "shaders/simple.gs";
+const char* simpleFragmentPath = "shaders/simple.fs";
 
 const string modelPath = "models/backpack.obj";
 
@@ -210,6 +213,49 @@ int main()
 		return -1;
 	}
 
+	stbi_set_flip_vertically_on_load(true);
+
+	Shader shader(simpleVertexPath, simpleFragmentPath, simpleGeometryPath);
+
+	glEnable(GL_DEPTH_TEST);
+
+	Model bag(modelPath);
+
+	/* Render loop */
+	while (!glfwWindowShouldClose(window)) {
+
+		float currentFrame = static_cast<float>(glfwGetTime());
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		/* Input */
+		processInput(window);
+
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 1.0f, 100.0f);
+		glm::mat4 view = camera.get_view_matrix();;
+		glm::mat4 model = glm::mat4(1.0f);
+		shader.use();
+		int projectionLoc = glGetUniformLocation(shader.ID, "projection");
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+		int viewLoc = glGetUniformLocation(shader.ID, "view");
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		int modelLoc = glGetUniformLocation(shader.ID, "model");
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		int timeLoc = glGetUniformLocation(shader.ID, "time");
+		shader.setFloat("time", static_cast<float>(glfwGetTime()));
+
+		// draw model
+		bag.Draw(shader);
+
+		/* Check and call events and all buffers. */
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
+#if 0
 	/* NOTE: Till here, we have :
 	 * - Initialized GLFW and created a window object
 	 * - Assigned the context of the window object as our main OpenGL context
@@ -426,6 +472,7 @@ int main()
 	shader.deleteProgram();
 	skyboxShader.deleteProgram();
 	//single_color_shader.deleteProgram();
+#endif
 
 	glfwTerminate();  
 	return 0;
