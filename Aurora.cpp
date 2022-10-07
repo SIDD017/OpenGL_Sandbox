@@ -46,6 +46,7 @@ const char* vegetationTexture = "textures/grass.png";
 const char* transparent_window_texture = "textures/blending_transparent_window.png";
 const char* containertexture = "textures/container2.png";
 const char* containertexture_specular = "textures/container2_specular.png";
+const char* woodtexture = "textures/wood.png";
 
 
 /* NOTE: vector initialization should be done during declaration itself. C++ doesn't allow 
@@ -93,6 +94,19 @@ void processInput(GLFWwindow *window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		camera.process_keyboard(CAMERA_RIGHT, deltaTime);
+	}
+}
+
+void processBlinn(GLFWwindow* window, bool &blinn, bool &blinnKeyPressed)
+{
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS && !blinnKeyPressed)
+	{
+		blinn = !blinn;
+		blinnKeyPressed = true;
+	}
+	if (glfwGetKey(window, GLFW_KEY_B) == GLFW_RELEASE)
+	{
+		blinnKeyPressed = false;
 	}
 }
 
@@ -221,65 +235,47 @@ int main()
 
 	stbi_set_flip_vertically_on_load(true);
 
-	float cubeVertices[] = {
-		// positions       
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
+	float planeVertices[] = {
+		// positions            // normals         // texcoords
+		 10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+		-10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+		-10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
 
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f
+		 10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
+		-10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+		 10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
 	};
 
 	Shader shader(simpleVertexPath, simpleFragmentPath);
 
-	unsigned int cubeVAO, cubeVBO;
-	glGenVertexArrays(1, &cubeVAO);
-	glGenBuffers(1, &cubeVBO);
-	glBindVertexArray(cubeVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+	unsigned int VAO, VBO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), &planeVertices, GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glBindVertexArray(0);
+
+	unsigned int floorTexture = loadTexture(woodtexture);
+
+	shader.use();
+	shader.setInt("texture1", 0);
+
+	glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_MULTISAMPLE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	bool blinn = false;
+	bool blinnkeypressed = false;
 
 	/* Render loop */
 	while (!glfwWindowShouldClose(window)) {
@@ -290,6 +286,7 @@ int main()
 
 		/* Input */
 		processInput(window);
+		processBlinn(window, blinn, blinnkeypressed);
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -301,12 +298,19 @@ int main()
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 		int viewLoc = glGetUniformLocation(shader.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		
+		float p[] = { camera.position.x, camera.position.y, camera.position.z };
+		shader.setVecN("viewPos", p, 3);
+		float l[] = {lightPos.x, lightPos.y, lightPos.z};
+		shader.setVecN("lightPos", l, 3);
+		shader.setInt("blinn", blinn);
+		// floor
+		glBindVertexArray(VAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		glm::mat4 model = glm::mat4(1.0f);
-		int modelLoc = glGetUniformLocation(shader.ID, "model");
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glBindVertexArray(cubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		std::cout << (blinn ? "Blinn-Phong" : "Phong") << std::endl;
 
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
