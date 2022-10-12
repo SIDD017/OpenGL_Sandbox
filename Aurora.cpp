@@ -38,6 +38,8 @@ const char* simpleDepthFragmentPath = "shaders/simpleDepth.fs";
 const char* normalVertexPath = "shaders/normal.vs";
 const char* normalFragmentPath = "shaders/normal.fs";
 const char* normalGeometryPath = "shaders/normal.gs";
+const char* simpleShadowVertexPath = "shaders/shadow.vs";
+const char* simpleShadowFragmentPath = "shaders/shadow.fs";
 
 const string modelPath = "models/backpack.obj";
 const string rockPath = "models/rock.obj";
@@ -402,12 +404,13 @@ int main()
 	stbi_set_flip_vertically_on_load(true);
 
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	Shader shader(simpleShadowVertexPath, simpleShadowFragmentPath);
 	Shader simpleDepthShader(simpleDepthVertexPath, simpleDepthFragmentPath);
-	Shader simpleShader(simpleVertexPath, simpleFragmentPath);
+	Shader debugDepthQuad(simpleVertexPath, simpleFragmentPath);
 
 	float planeVertices[] = {
 		// positions            // normals         // texcoords
@@ -454,8 +457,11 @@ int main()
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	simpleShader.use();
-	simpleShader.setInt("depthMap", 0);
+	shader.use();
+	shader.setInt("diffuseTexture", 0);
+	shader.setInt("shadowMap", 1);
+	debugDepthQuad.use();
+	debugDepthQuad.setInt("depthMap", 0);
 
 	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
@@ -480,8 +486,8 @@ int main()
 		lightSpaceMatrix = lightProjection * lightView;
 		// render scene from light's point of view
 		simpleDepthShader.use();
-		int loc = glGetUniformLocation(simpleDepthShader.ID, "lightSpaceMatrix");
-		glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+		int lightSpaceMatrixloc = glGetUniformLocation(simpleDepthShader.ID, "lightSpaceMatrix");
+		glUniformMatrix4fv(lightSpaceMatrixloc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
 
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
@@ -495,19 +501,45 @@ int main()
 		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// 2. render scene as normal using the generated depth/shadow map  
+		// --------------------------------------------------------------
+		glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		shader.use();
+		glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = camera.get_view_matrix();
+		int projectionloc = glGetUniformLocation(shader.ID, "projection");
+		glUniformMatrix4fv(projectionloc, 1, GL_FALSE, glm::value_ptr(projection));
+		int viewloc = glGetUniformLocation(shader.ID, "view");
+		glUniformMatrix4fv(viewloc, 1, GL_FALSE, glm::value_ptr(view));
+		// set light uniforms
+		float campos[3] = {camera.position.x, camera.position.y, camera.position.z};
+		float lightpos[3] = { lightPos.x, lightPos.y, lightPos.z };
+		shader.setVecN("viewPos", campos, 3);
+		shader.setVecN("lightPos", lightpos, 3);
+		lightSpaceMatrixloc = glGetUniformLocation(shader.ID, "lightSpaceMatrix");
+		glUniformMatrix4fv(lightSpaceMatrixloc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, floorTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		renderScene(shader);
+
 		// render Depth map to quad for visual debugging
 		// ---------------------------------------------
-		simpleShader.use();
-		simpleShader.setFloat("near_plane", near_plane);
-		simpleShader.setFloat("far_plane", far_plane);
+		debugDepthQuad.use();
+		debugDepthQuad.setFloat("near_plane", near_plane);
+		debugDepthQuad.setFloat("far_plane", far_plane);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthMap);
-		renderQuad();
 
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	glDeleteVertexArrays(1, &planeVAO);
+	glDeleteBuffers(1, &planeVBO);
 
 	glfwTerminate();  
 	return 0;
