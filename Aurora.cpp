@@ -40,6 +40,8 @@ const char* simpleShadowVertexPath = "shaders/shadow.vs";
 const char* simpleShadowFragmentPath = "shaders/shadow.fs";
 const char* normalMappingVertexPath = "shaders/normal_map.vs";
 const char* normalMappingFragmentPath = "shaders/normal_map.fs";
+const char* parallaxMappingVertexPath = "shaders/parallax_map.vs";
+const char* parallaxMappingFragmentPath = "shaders/parallax_map.fs";
 
 /* Models. */
 const string modelPath = "models/backpack.obj";
@@ -59,10 +61,13 @@ const char* containertexture_specular = "textures/container2_specular.png";
 const char* woodtexture = "textures/wood.png";
 const char* brickwall_diffuse = "textures/brickwall.jpg";
 const char* brickwall_normal = "textures/brickwall_normal.jpg";
+const char* brick2_diffuse = "textures/bricks2.jpg";
+const char* brick2_normal = "textures/bricks2_normal.jpg";
+const char* brick2_displacement = "textures/bricks2_disp.jpg";
 
 
 /* NOTE: vector initialization should be done during declaration itself. C++ doesn't allow 
- * assignment operations (or any operation tbh) to be done outside a class/function. */
+ * assignment operations (or any operation tbh) outside a class/function. */
 
 /* Cubemap textures. */
 vector<string> cubemapFaces{
@@ -82,6 +87,8 @@ float lastFrame = 0.0f;
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool first_mouse = true;
+
+float heightScale = 0.1f;
 
 /** Callbacks. */
 
@@ -106,6 +113,21 @@ void processInput(GLFWwindow *window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		camera.process_keyboard(CAMERA_RIGHT, deltaTime);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		if (heightScale > 0.0f)
+			heightScale -= 0.0005f;
+		else
+			heightScale = 0.0f;
+	}
+	else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		if (heightScale < 1.0f)
+			heightScale += 0.0005f;
+		else
+			heightScale = 1.0f;
 	}
 }
 
@@ -139,19 +161,15 @@ unsigned int loadTexture(char const* path, bool gammaCorrection)
 
 	int width, height, nrComponents;
 	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
-	if (data)
-	{
+	if (data) {
 		GLenum format;
-		if (nrComponents == 1)
-		{
+		if (nrComponents == 1) {
 			format = GL_RED;
 		}
-		else if (nrComponents == 3)
-		{
+		else if (nrComponents == 3) {
 			format = GL_RGB;
 		}
-		else if (nrComponents == 4)
-		{
+		else if (nrComponents == 4) {
 			format = GL_RGBA;
 		}
 
@@ -159,8 +177,8 @@ unsigned int loadTexture(char const* path, bool gammaCorrection)
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, format == GL_RGBA ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
@@ -175,28 +193,32 @@ unsigned int loadTexture(char const* path, bool gammaCorrection)
 	return textureID;
 }
 
+// renders a 1x1 quad in NDC with manually calculated tangent vectors
+// ------------------------------------------------------------------
 unsigned int quadVAO = 0;
 unsigned int quadVBO;
 void renderQuad()
 {
 	if (quadVAO == 0)
 	{
-		/* positions */
+		// positions
 		glm::vec3 pos1(-1.0f, 1.0f, 0.0f);
 		glm::vec3 pos2(-1.0f, -1.0f, 0.0f);
 		glm::vec3 pos3(1.0f, -1.0f, 0.0f);
 		glm::vec3 pos4(1.0f, 1.0f, 0.0f);
-		/* texture coordinates */
+		// texture coordinates
 		glm::vec2 uv1(0.0f, 1.0f);
 		glm::vec2 uv2(0.0f, 0.0f);
 		glm::vec2 uv3(1.0f, 0.0f);
 		glm::vec2 uv4(1.0f, 1.0f);
-		/* normal vector */
+		// normal vector
 		glm::vec3 nm(0.0f, 0.0f, 1.0f);
 
+		// calculate tangent/bitangent vectors of both triangles
 		glm::vec3 tangent1, bitangent1;
 		glm::vec3 tangent2, bitangent2;
-		/* triangle 1 */
+		// triangle 1
+		// ----------
 		glm::vec3 edge1 = pos2 - pos1;
 		glm::vec3 edge2 = pos3 - pos1;
 		glm::vec2 deltaUV1 = uv2 - uv1;
@@ -207,12 +229,15 @@ void renderQuad()
 		tangent1.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
 		tangent1.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
 		tangent1.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+		tangent1 = glm::normalize(tangent1);
 
 		bitangent1.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
 		bitangent1.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
 		bitangent1.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+		bitangent1 = glm::normalize(bitangent1);
 
-		/* triangle 2 */
+		// triangle 2
+		// ----------
 		edge1 = pos3 - pos1;
 		edge2 = pos4 - pos1;
 		deltaUV1 = uv3 - uv1;
@@ -223,11 +248,13 @@ void renderQuad()
 		tangent2.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
 		tangent2.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
 		tangent2.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+		tangent2 = glm::normalize(tangent2);
 
 
 		bitangent2.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
 		bitangent2.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
 		bitangent2.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+		bitangent2 = glm::normalize(bitangent2);
 
 
 		float quadVertices[] = {
@@ -240,7 +267,7 @@ void renderQuad()
 			pos3.x, pos3.y, pos3.z, nm.x, nm.y, nm.z, uv3.x, uv3.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z,
 			pos4.x, pos4.y, pos4.z, nm.x, nm.y, nm.z, uv4.x, uv4.y, tangent2.x, tangent2.y, tangent2.z, bitangent2.x, bitangent2.y, bitangent2.z
 		};
-
+		// configure plane VAO
 		glGenVertexArrays(1, &quadVAO);
 		glGenBuffers(1, &quadVBO);
 		glBindVertexArray(quadVAO);
@@ -306,14 +333,16 @@ int main()
 	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	Shader shader(normalMappingVertexPath, normalMappingFragmentPath);
+	Shader shader(parallaxMappingVertexPath, parallaxMappingFragmentPath);
 
-	unsigned int diffuseMap = loadTexture(brickwall_diffuse, false);
-	unsigned int normalMap = loadTexture(brickwall_normal, false);
+	unsigned int diffuseMap = loadTexture(brick2_diffuse, false);
+	unsigned int normalMap = loadTexture(brick2_normal, false);
+	unsigned int heightMap = loadTexture(brick2_displacement, false);
 
 	shader.use();
 	shader.setInt("diffuseMap", 0);
 	shader.setInt("normalMap", 1);
+	shader.setInt("depthMap", 2);
 
 	glm::vec3 lightPos(0.5f, 1.0f, 0.3f);
 
@@ -327,9 +356,6 @@ int main()
 		/* Input */
 		processInput(window);
 
-		/* Moving point light source. */
-		//lightPos.x = static_cast<float>(sin(glfwGetTime() * 0.5) * 3.0);
-
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -340,6 +366,7 @@ int main()
 		glUniformMatrix4fv(projectionloc, 1, GL_FALSE, glm::value_ptr(projection));
 		int viewloc = glGetUniformLocation(shader.ID, "view");
 		glUniformMatrix4fv(viewloc, 1, GL_FALSE, glm::value_ptr(view));
+
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model, glm::radians((float)glfwGetTime() * -10.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
 		int modelloc = glGetUniformLocation(shader.ID, "model");
@@ -348,11 +375,15 @@ int main()
 		shader.setVecN("viewPos", viewposloc, 3);
 		float lightposloc[3] = { lightPos.x,lightPos.y , lightPos.z };
 		shader.setVecN("lightPos", lightposloc, 3);
+		shader.setFloat("heightScale", heightScale);
+		std::cout << heightScale << std::endl;
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseMap);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, normalMap);
+		glBindTexture(GL_TEXTURE_2D, normalMap);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, heightMap);
 		renderQuad();
 
 		// render light source (simply re-renders a smaller plane at the light's position for debugging/visualization)
@@ -363,7 +394,6 @@ int main()
 		glUniformMatrix4fv(modelloc, 1, GL_FALSE, glm::value_ptr(model));
 		renderQuad();
 
-
 		/* Check and call events and all buffers. */
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -372,3 +402,11 @@ int main()
 	glfwTerminate();  
 	return 0;
 }
+
+
+
+
+
+
+/* Go to noral map commit in git and change the GL_TEXTURE1 type to normal 2D texture. 
+ * I guess you had made the error of passing t off as cubemap type. */
