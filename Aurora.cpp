@@ -352,7 +352,7 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseMap);
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, normalMap);
+		glBindTexture(GL_TEXTURE_2D, normalMap);
 		renderQuad();
 
 		// render light source (simply re-renders a smaller plane at the light's position for debugging/visualization)
