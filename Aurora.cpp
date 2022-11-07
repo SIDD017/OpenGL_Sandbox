@@ -89,6 +89,11 @@ const char* brickwall_normal = "textures/brickwall_normal.jpg";
 const char* brick2_diffuse = "textures/bricks2.jpg";
 const char* brick2_normal = "textures/bricks2_normal.jpg";
 const char* brick2_displacement = "textures/bricks2_disp.jpg";
+const char* rusted_iron_ao = "textures/rustediron2_ao.png";
+const char* rusted_iron_albedo = "textures/rustediron2_basecolor.png";
+const char* rusted_iron_normal = "textures/rustediron2_metallic.png";
+const char* rusted_iron_metallic = "textures/rustediron2_normal.png";
+const char* rusted_iron_roughness = "textures/rustediron2_roughness.png";
 
 
 /* NOTE: vector initialization should be done during declaration itself. C++ doesn't allow 
@@ -159,44 +164,6 @@ void mouse_callback(GLFWwindow *window, double xPos, double yPos)
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) 
 {
 	camera.process_mouse_scroll(static_cast<float>(yoffset));
-}
-
-/* Utility function for loading a 2D texture from file. */
-unsigned int loadTexture(char const* path, bool gammaCorrection)
-{
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-
-	int width, height, nrComponents;
-	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
-	if (data)
-	{
-		GLenum format;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-	}
-	else
-	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
-		stbi_image_free(data);
-	}
-
-	return textureID;
 }
 
 unsigned int sphereVAO = 0;
@@ -294,6 +261,45 @@ void renderSphere()
 	glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 }
 
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(char const* path)
+{
+	unsigned int textureID;
+	glGenTextures(1, &textureID);
+
+	int width, height, nrComponents;
+	unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+	if (data)
+	{
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+	}
+	else
+	{
+		std::cout << "Texture failed to load at path: " << path << std::endl;
+		stbi_image_free(data);
+	}
+
+	return textureID;
+}
+
 
 int main()
 {
@@ -342,21 +348,23 @@ int main()
 	Shader shader(pbrVertexPath, pbrFragmentPath);
 
 	shader.use();
-	float temp[3] = { 0.5f, 0.0f, 0.0f };
-	shader.setVecN("albedo", temp, 3);
-	shader.setFloat("ao", 1.0f);
+	shader.setInt("albedoMap", 0);
+	shader.setInt("normalMap", 1);
+	shader.setInt("metallicMap", 2);
+	shader.setInt("roughnessMap", 3);
+	shader.setInt("aoMap", 4);
+
+	unsigned int albedo = loadTexture(rusted_iron_albedo);
+	unsigned int normal = loadTexture(rusted_iron_normal);
+	unsigned int metallic = loadTexture(rusted_iron_metallic);
+	unsigned int roughness = loadTexture(rusted_iron_roughness);
+	unsigned int ao = loadTexture(rusted_iron_ao);
 
 	glm::vec3 lightPositions[] = {
-		glm::vec3(-10.0f,  10.0f, 10.0f),
-		glm::vec3(10.0f,  10.0f, 10.0f),
-		glm::vec3(-10.0f, -10.0f, 10.0f),
-		glm::vec3(10.0f, -10.0f, 10.0f),
+		glm::vec3(0.0f, 0.0f, 10.0f),
 	};
 	glm::vec3 lightColors[] = {
-		glm::vec3(300.0f, 300.0f, 300.0f),
-		glm::vec3(300.0f, 300.0f, 300.0f),
-		glm::vec3(300.0f, 300.0f, 300.0f),
-		glm::vec3(300.0f, 300.0f, 300.0f)
+		glm::vec3(150.0f, 150.0f, 150.0f),
 	};
 	int nrRows = 7;
 	int nrColumns = 7;
@@ -387,21 +395,26 @@ int main()
 		float tempcampos[3] = { camera.position.x, camera.position.y, camera.position.z };
 		shader.setVecN("camPos", tempcampos, 3);
 
-		// render rows*column number of spheres with varying metallic/roughness values scaled by rows and columns respectively
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, albedo);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, normal);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, metallic);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, roughness);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, ao);
+
 		glm::mat4 model = glm::mat4(1.0f);
 		for (int row = 0; row < nrRows; ++row)
 		{
-			shader.setFloat("metallic", (float)row / (float)nrRows);
 			for (int col = 0; col < nrColumns; ++col)
 			{
-				// we clamp the roughness to 0.05 - 1.0 as perfectly smooth surfaces (roughness of 0.0) tend to look a bit off
-				// on direct lighting.
-				shader.setFloat("roughness", glm::clamp((float)col / (float)nrColumns, 0.05f, 1.0f));
-
 				model = glm::mat4(1.0f);
 				model = glm::translate(model, glm::vec3(
-					(col - (nrColumns / 2)) * spacing,
-					(row - (nrRows / 2)) * spacing,
+					(float)(col - (nrColumns / 2)) * spacing,
+					(float)(row - (nrRows / 2)) * spacing,
 					0.0f
 				));
 				int modelloc = glGetUniformLocation(shader.ID, "model");
@@ -410,9 +423,6 @@ int main()
 			}
 		}
 
-		// render light source (simply re-render sphere at light positions)
-		// this looks a bit off as we use the same shader, but it'll make their positions obvious and 
-		// keeps the codeprint small.
 		for (unsigned int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); ++i)
 		{
 			glm::vec3 newPos = lightPositions[i] + glm::vec3(sin(glfwGetTime() * 5.0) * 5.0, 0.0, 0.0);
